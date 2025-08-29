@@ -152,3 +152,104 @@ From this Table, we can gather that:
 - Ramen is the most purchased item on the menu !
 
 ***
+
+**5. Which item was the most popular for each customer?**
+
+````sql
+WITH customer_item_counts AS (
+  SELECT 
+  	s.customer_id,
+  	m.product_name,
+  	COUNT(*) AS purchase_count
+  FROM sales s
+  JOIN menu m
+  	ON s.product_id = m.product_id
+  GROUP BY s.customer_id, m.product_name
+),
+ranked_items AS ( 
+  SELECT 
+  	customer_id,
+  	product_name,
+  	purchase_count,
+  	RANK() OVER (
+      PARTITION BY customer_id
+      ORDER BY purchase_count DESC
+    ) AS rnk
+   FROM customer_item_counts
+  )
+ SELECT 
+ 	customer_id,
+    product_name AS most_popular_itme,
+    purchase_count
+ FROM ranked_items
+ WHERE rnk = 1
+ ORDER BY customer_id;
+````
+
+*Each user may have more than 1 favourite item.*
+
+#### Steps:
+- Used a **COUNT** aggregation to see how many times each customer ordered each product `customer_item_counts`.
+- Using `purchase_count` we ranked items per customer
+- Then used the **RANK** function in the case of a tie, we return all top items.
+- Finally, used a filter with `WHERE rnk = 1`.
+
+#### Answer:
+| customer_id | product_name | order_count |
+| ----------- | ---------- |------------  |
+| A           | ramen        |  3   |
+| B           | sushi        |  2   |
+| B           | curry        |  2   |
+| B           | ramen        |  2   |
+| C           | ramen        |  3   |
+
+From this Table, we can gather that:
+- Customer A and C's favourite item is ramen.
+- Customer B enjoys all items on the menu.
+
+***
+
+**6. Which item was purchased first by the customer after they became a member?**
+
+```sql
+WITH member_sales AS (
+  SELECT
+  	s.customer_id,
+  	s.order_date,
+  	m.product_name,
+  	ROW_NUMBER() OVER (
+      PARTITION BY s.customer_id
+      ORDER BY s.order_date ASC, s.product_id ASC
+      ) AS rn
+  	FROM sales s
+  	JOIN menu m
+  	ON s.product_id = m.product_id
+  	JOIN members mem
+  	ON s.customer_id = mem.customer_id
+  	WHERE s.order_date >= mem.join_date
+  )
+SELECT customer_id, order_date, product_name AS first_item_after_join
+FROM member_sales
+WHERE rn = 1
+ORDER BY customer_id;
+```
+
+#### Steps:
+- Created a CTE named `member_sales` then selected the appropriate columns and calculated the row number using the **ROW_NUMBER()** function. The **PARTITION BY** clause divides the data by `s.customer_id` and the **ORDER BY** clause orders the rows within each `s.order_date` and `s.product_id` ASC.
+- Then joined the tables `members` and `sales` on `customer_id` column. Additionally, applied a condition to include sales that occurred *On or After* the member's `join_date` (`s.order_date >= mem.join_date`).
+- Then used the **WHERE** clause in the **Outer Query** to filter and retrieve only the rows where the rn column = 1, representing the first row within each `customer_id` partition.
+- Lastly, ordered result by `customer_id`.
+
+#### Answer:
+| customer_id | product_name |
+| ----------- | ---------- |
+| A           | curry        |
+| B           | sushi        |
+
+From this Table, we can gather that:
+- Customer A's first order as a member is curry.
+- Customer B's first order as a member is sushi.
+
+***
+
+**7. Which item was purchased just before the customer became a member?**
