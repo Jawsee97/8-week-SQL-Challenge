@@ -125,3 +125,30 @@ From this Table, we can gather that:
 - Customer C's first order is ramen.
 
 **4. What is the most purchased item on the menu and how many times was it purchased by all customers?**
+
+````sql
+SELECT
+	menu.product_name,
+    COUNT(sales.product_id) AS total_purchases
+FROM dannys_diner.sales
+JOIN dannys_diner.menu
+ON sales.product_id = menu.product_id
+GROUP BY menu.product_name
+ORDER BY total_purchases DESC
+LIMIT 1;
+````
+
+#### Steps:
+- Used a **COUNT** aggregation on the `product_id` column and **ORDER BY** the result in descending order using `total_purchases` field.
+- Used the **LIMIT** 1 clause to filter and retrieve the top-selling item.
+
+#### Answer:
+| most_purchased | product_name | 
+| ----------- | ----------- |
+| 8       | ramen |
+
+
+From this Table, we can gather that:
+- Ramen is the most purchased item on the menu !
+
+***
