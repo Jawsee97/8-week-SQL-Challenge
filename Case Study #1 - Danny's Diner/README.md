@@ -253,3 +253,125 @@ From this Table, we can gather that:
 ***
 
 **7. Which item was purchased just before the customer became a member?**
+
+````sql
+WITH pre_member_sales AS ( 
+  SELECT
+  	s.customer_id,
+  	s.order_date,
+  	m.product_name,
+  	ROW_NUMBER() OVER (
+      PARTITION BY s.customer_id
+      ORDER BY s.order_date DESC, s.product_id DESC
+      ) AS rn
+  FROM sales s
+  JOIN menu m 
+  	ON s.product_id = m.product_id
+  JOIN members mem
+  	ON s.customer_id = mem.customer_id
+  WHERE s.order_date < mem.join_date
+  )
+  SELECT
+  	customer_id,
+    order_date,
+    product_name AS last_item_before_join
+  FROM pre_member_sales
+  WHERE rn = 1
+  ORDER BY customer_id;
+````
+
+#### Steps:
+- Created a CTE called `pre_member_sales`. 
+- Select the appropriate columns and calculate the rank using the **ROW_NUMBER()** window function. The rank is determined based on the order dates of the sales along with the product ID in descending order.
+- Join `dannys_diner.sales` table with `dannys_diner.menu` table and the `dannys_diner.members` table so we can filter by membership join date.
+- Then used the **WHERE** clause to keep sales that only happened before the customer became a member.
+- Then filtered the result set to include only the rows where the rank = 1, representing the earliest purchase made by each customer before they became a member.
+- Finally, sorted the result by `customer_id`.
+
+#### Answer:
+| customer_id | product_name |
+| ----------- | ---------- |
+| A           | curry        |
+| B           | sushi        |
+
+From this Table, we can gather that:
+- Customers A last item purchased pre-membership was curry
+- Customers B last item purchased pre-membership was sushi
+
+***
+
+**8. What is the total items and amount spent for each member before they became a member?**
+
+```sql
+SELECT 
+	mem.customer_id,
+    COUNT(s.product_id) AS total_items,
+    SUM(m.price) AS total_amount
+FROM sales s
+JOIN menu m
+	ON s.product_id = m.product_id
+JOIN members mem
+	ON s.customer_id = mem.customer_id
+WHERE s.order_date < mem.join_date
+GROUP BY mem.customer_id
+ORDER BY mem.customer_id;
+```
+
+#### Steps:
+- Selected the columns `mem.customer_id` and then used the **COUNT** aggregation to count `sales.product_id` as total_items for each customer. Then used the  **SUM** aggregation to sum the `m.price` as total_sales.
+- Joined the `sales`,`menu`, and `members` table, then used the **WHERE** clause to filter the `s.order_date` and `mem.join_date` to keep only the rows where the purchase date is before the customer's join date.
+- Grouped the results by `mem.customer_id`.
+- Ordered the result by `mem.customer_id`.
+
+#### Answer:
+| customer_id | total_items | total_sales |
+| ----------- | ---------- |----------  |
+| A           | 2 |  25       |
+| B           | 3 |  40       |
+
+From this Table, we can gather that:
+Before becoming members,
+- Customer A spent $25 on 2 items.
+- Customer B spent $40 on 3 items.
+
+***
+
+**9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier — how many points would each customer have?**
+
+```sql
+SELECT s.customer_id,
+	SUM(
+      CASE
+      	WHEN m.product_name = 'sushi' THEN m.price * 10 * 2
+      	ELSE m.price * 10
+      END
+     ) AS total_points
+FROM sales s
+JOIN menu m 
+	ON s.product_id = m.product_id
+GROUP BY s.customer_id
+ORDER BY s.customer_id;
+```
+
+#### Steps:
+- Used a `CASE` expression to calculate points, if product name = sushi, then apply the 2x points multiplier, otherwise, multiply price by 10.
+- Then joined the `sales` and `menu` table
+- Finally Grouped and Ordered rows by `s.customer_id`
+
+#### Answer:
+| customer_id | total_points | 
+| ----------- | ---------- |
+| A           | 860 |
+| B           | 940 |
+| C           | 360 |
+
+From this Table, we can gather that:
+- Total points for Customer A is $860.
+- Total points for Customer B is $940.
+- Total points for Customer C is $360.
+
+***
+
+**10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi — how many points do customer A and B have at the end of January?**
+
+
