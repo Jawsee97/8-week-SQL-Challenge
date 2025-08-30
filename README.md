@@ -8,4 +8,4 @@ It highlights my capabilities to analyze diverse SQL challenges while demonstrat
 ## 📚 Table of Contents
 
 Please find the solution links for the case studies below. Simply click on the links to access each solution.
-- [Case Study #1: Danny's Diner](#-case-study-1-dannys-diner)
+- [Case Study #1: Danny's Diner](#Case Study #1 - Danny's Diner/README.md)
