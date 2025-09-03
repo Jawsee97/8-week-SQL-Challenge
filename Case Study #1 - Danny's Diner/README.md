@@ -124,6 +124,8 @@ From this Table, we can gather that:
 - Customer B's first order is curry.
 - Customer C's first order is ramen.
 
+  ***
+
 **4. What is the most purchased item on the menu and how many times was it purchased by all customers?**
 
 ````sql
